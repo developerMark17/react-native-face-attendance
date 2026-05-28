@@ -1,0 +1,201 @@
+import React, {useState} from 'react';
+import {Image, ScrollView, StyleSheet, Text, View} from 'react-native';
+
+import LiveCameraModal from '../components/LiveCameraModal';
+import LoadingOverlay from '../components/LoadingOverlay';
+import PrimaryButton from '../components/PrimaryButton';
+import ResultBanner from '../components/ResultBanner';
+import TextInputField from '../components/TextInputField';
+import {colors, spacing} from '../constants/theme';
+import {registerFace} from '../services/attendanceApi';
+
+function RegisterScreen({navigation}) {
+  const [name, setName] = useState('');
+  const [studentCode, setStudentCode] = useState('');
+  const [email, setEmail] = useState('');
+  const [department, setDepartment] = useState('Computer Science');
+  const [program, setProgram] = useState('B.Tech');
+  const [semester, setSemester] = useState('1');
+  const [section, setSection] = useState('A');
+  const [result, setResult] = useState({type: '', message: ''});
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+
+  const handleCapture = async () => {
+    setCameraOpen(true);
+  };
+
+  const handleRegister = async () => {
+    if (!name.trim()) {
+      setResult({type: 'error', message: 'Please enter a valid name.'});
+      return;
+    }
+
+    if (!image?.uri) {
+      setResult({type: 'error', message: 'Capture a clear face photo before submitting.'});
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setResult({type: '', message: ''});
+      const response = await registerFace({
+        name: name.trim(),
+        student_code: studentCode.trim() || undefined,
+        email: email.trim() || undefined,
+        department: department.trim() || undefined,
+        program: program.trim() || undefined,
+        semester: semester.trim() || undefined,
+        section: section.trim() || undefined,
+        image,
+      });
+      setResult({type: 'success', message: response.message || 'Face registered successfully.'});
+    } catch (error) {
+      setResult({
+        type: 'error',
+        message: error?.response?.data?.detail || 'Failed to register face.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Register Face</Text>
+      <Text style={styles.infoText}>
+        Capture a front-facing image with one visible face, then enroll the student for attendance.
+      </Text>
+
+      <View style={styles.heroCard}>
+        <Text style={styles.heroTitle}>Enrollment Checklist</Text>
+        <Text style={styles.heroPoint}>Good light and neutral background</Text>
+        <Text style={styles.heroPoint}>Only one face in frame</Text>
+        <Text style={styles.heroPoint}>Student code matches the college record</Text>
+      </View>
+
+      <TextInputField label="Student Name" value={name} onChangeText={setName} placeholder="Enter full name" />
+      <TextInputField
+        label="Student Code"
+        value={studentCode}
+        onChangeText={setStudentCode}
+        placeholder="Example: CSE-2026-001"
+      />
+      <TextInputField
+        label="Email"
+        value={email}
+        onChangeText={setEmail}
+        placeholder="student@college.edu"
+        keyboardType="email-address"
+      />
+      <View style={styles.inlineFields}>
+        <View style={styles.inlineItem}>
+          <TextInputField label="Department" value={department} onChangeText={setDepartment} placeholder="Department" />
+        </View>
+        <View style={styles.inlineItem}>
+          <TextInputField label="Program" value={program} onChangeText={setProgram} placeholder="Program" />
+        </View>
+      </View>
+      <View style={styles.inlineFields}>
+        <View style={styles.inlineItem}>
+          <TextInputField
+            label="Semester"
+            value={semester}
+            onChangeText={setSemester}
+            placeholder="1"
+            keyboardType="number-pad"
+          />
+        </View>
+        <View style={styles.inlineItem}>
+          <TextInputField label="Section" value={section} onChangeText={setSection} placeholder="A" />
+        </View>
+      </View>
+
+      {image?.uri ? (
+        <View style={styles.previewCard}>
+          <Image source={{uri: image.uri}} style={styles.previewImage} />
+        </View>
+      ) : null}
+
+      <ResultBanner type={result.type} message={result.message} />
+
+      <PrimaryButton label={image?.uri ? 'Retake Face Photo' : 'Capture Face Photo'} onPress={handleCapture} />
+      <PrimaryButton label="Register Face" onPress={handleRegister} disabled={loading} />
+      <PrimaryButton label="Go to Attendance" onPress={() => navigation.navigate('Camera')} variant="secondary" />
+      <PrimaryButton label="View Logs" onPress={() => navigation.navigate('Logs')} variant="secondary" />
+
+      {loading ? <LoadingOverlay message="Registering face..." /> : null}
+
+      <LiveCameraModal
+        visible={cameraOpen}
+        title="Register Face"
+        subtitle="Center your face inside the guide and capture without leaving the app."
+        confirmLabel="Use This Photo"
+        onClose={() => setCameraOpen(false)}
+        onConfirm={asset => {
+          setImage(asset);
+          setResult({type: 'success', message: 'Face image captured in-app. Review it, then submit registration.'});
+        }}
+      />
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.bg,
+    padding: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: spacing.xs,
+  },
+  infoText: {
+    color: colors.muted,
+    marginBottom: spacing.md,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  heroCard: {
+    backgroundColor: '#0F766E',
+    borderRadius: 20,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 16,
+    marginBottom: spacing.xs,
+  },
+  heroPoint: {
+    color: '#D1FAE5',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  previewCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+  },
+  previewImage: {
+    width: '100%',
+    height: 320,
+  },
+  inlineFields: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  inlineItem: {
+    flex: 1,
+  },
+});
+
+export default RegisterScreen;
