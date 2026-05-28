@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   heroCard: {
-    backgroundColor: '#0F766E',
+    backgroundColor: '#4F46E5',
     borderRadius: 20,
     padding: spacing.md,
     marginBottom: spacing.md,
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   heroPoint: {
-    color: '#D1FAE5',
+    color: '#EEF2FF',
     fontSize: 14,
     marginTop: 4,
   },

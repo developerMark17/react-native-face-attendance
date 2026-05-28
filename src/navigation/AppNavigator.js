@@ -11,7 +11,7 @@ const Stack = createNativeStackNavigator();
 function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Register" screenOptions={{headerShown: true}}>
+      <Stack.Navigator initialRouteName="Camera" screenOptions={{headerShown: true}}>
         <Stack.Screen name="Register" component={RegisterScreen} options={{title: 'Register Face'}} />
         <Stack.Screen name="Camera" component={CameraScreen} options={{title: 'Mark Attendance'}} />
         <Stack.Screen name="Logs" component={AttendanceLogScreen} options={{title: 'Attendance Logs'}} />
