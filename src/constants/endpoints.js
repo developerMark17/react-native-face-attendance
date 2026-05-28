@@ -1,5 +1,5 @@
 const DEV_API_BASE_URL = 'http://127.0.0.1:8000';
-const PROD_API_BASE_URL = 'https://your-api-domain.com';
+const PROD_API_BASE_URL = 'https://fastapi-face-attendance.onrender.com';
 
 export const API_BASE_URL = __DEV__ ? DEV_API_BASE_URL : PROD_API_BASE_URL;
 
