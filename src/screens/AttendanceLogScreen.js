@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {FlatList, RefreshControl, StyleSheet, Text, View, Animated} from 'react-native';
+import {FlatList, RefreshControl, StyleSheet, Text, View, Animated, Linking, Share, Pressable} from 'react-native';
 
 import {AttendanceCard} from '../components/AttendanceCard';
 import LoadingOverlay from '../components/LoadingOverlay';
@@ -137,6 +137,42 @@ function AttendanceLogScreen() {
     };
   }, [logs]);
 
+  const openWhatsApp = () => {
+    Linking.openURL('whatsapp://send?text=Hello support!').catch(() => {
+      Linking.openURL('https://wa.me/1234567890');
+    });
+  };
+
+  const openTelegram = () => {
+    Linking.openURL('tg://resolve?domain=telegram').catch(() => {
+      Linking.openURL('https://t.me/telegram');
+    });
+  };
+
+  const openInstagram = () => {
+    Linking.openURL('instagram://user?username=instagram').catch(() => {
+      Linking.openURL('https://instagram.com/instagram');
+    });
+  };
+
+  const shareLatestLog = async () => {
+    if (logs.length === 0) {
+      return;
+    }
+    const latest = logs[0];
+    const punchTime = new Date(latest.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+    const shareMessage = `Attendance Marked!\nStudent: ${latest.name}\nCode: ${
+      latest.student_code || 'N/A'
+    }\nAction: ${latest.action.toUpperCase()}\nTime: ${punchTime}`;
+    try {
+      await Share.share({
+        message: shareMessage,
+      });
+    } catch (shareError) {
+      console.log('Error sharing logs:', shareError);
+    }
+  };
+
   const listHeader = (
     <View>
       <View style={styles.statsRow}>
@@ -152,6 +188,28 @@ function AttendanceLogScreen() {
           <Text style={styles.statLabel}>LAST MARK</Text>
           <Text style={styles.statValueDark}>{stats.latest}</Text>
         </View>
+      </View>
+
+      {/* Social & Sharing Panel */}
+      <View style={styles.socialCard}>
+        <Text style={styles.socialTitle}>Quick Social Links</Text>
+        <View style={styles.socialRow}>
+          <Pressable style={[styles.socialButton, styles.socialButtonWhatsApp]} onPress={openWhatsApp}>
+            <Text style={styles.socialButtonText}>WhatsApp</Text>
+          </Pressable>
+          <Pressable style={[styles.socialButton, styles.socialButtonTelegram]} onPress={openTelegram}>
+            <Text style={styles.socialButtonText}>Telegram</Text>
+          </Pressable>
+          <Pressable style={[styles.socialButton, styles.socialButtonInstagram]} onPress={openInstagram}>
+            <Text style={styles.socialButtonText}>Instagram</Text>
+          </Pressable>
+        </View>
+
+        {stats.total > 0 && (
+          <Pressable style={styles.shareButton} onPress={shareLatestLog}>
+            <Text style={styles.shareButtonText}>Share Latest Punch via WhatsApp/Telegram</Text>
+          </Pressable>
+        )}
       </View>
 
       <View style={styles.sectionHeader}>
@@ -319,6 +377,60 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.muted,
     textAlign: 'center',
+  },
+  socialCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  socialTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: spacing.sm,
+  },
+  socialRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  socialButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  socialButtonWhatsApp: {
+    backgroundColor: '#25D366',
+  },
+  socialButtonTelegram: {
+    backgroundColor: '#0088cc',
+  },
+  socialButtonInstagram: {
+    backgroundColor: '#E1306C',
+  },
+  socialButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  shareButton: {
+    backgroundColor: '#0F172A',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
 

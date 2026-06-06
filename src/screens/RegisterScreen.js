@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
-import {Image, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Image, PermissionsAndroid, Platform, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {launchImageLibrary} from 'react-native-image-picker';
 
 import LiveCameraModal from '../components/LiveCameraModal';
 import LoadingOverlay from '../components/LoadingOverlay';
@@ -13,6 +14,8 @@ function RegisterScreen({navigation}) {
   const [name, setName] = useState('');
   const [studentCode, setStudentCode] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [guardianPhone, setGuardianPhone] = useState('');
   const [department, setDepartment] = useState('Computer Science');
   const [program, setProgram] = useState('B.Tech');
   const [semester, setSemester] = useState('1');
@@ -26,6 +29,61 @@ function RegisterScreen({navigation}) {
     setCameraOpen(true);
   };
 
+  const handleChooseGallery = async () => {
+    try {
+      const options = {
+        mediaType: 'photo',
+        quality: 1,
+      };
+
+      launchImageLibrary(options, response => {
+        if (response.didCancel) {
+          console.log('User cancelled image picker');
+        } else if (response.errorCode) {
+          setResult({type: 'error', message: `Gallery Error: ${response.errorMessage}`});
+        } else if (response.assets && response.assets.length > 0) {
+          const asset = response.assets[0];
+          setImage(asset);
+          setResult({type: 'success', message: 'Face image selected from gallery.'});
+        }
+      });
+    } catch (err) {
+      setResult({type: 'error', message: 'Failed to open gallery.'});
+    }
+  };
+
+  const requestPhoneAndContactsAccess = async () => {
+    if (Platform.OS !== 'android') {
+      setResult({type: 'success', message: 'Permissions not required on this platform.'});
+      return;
+    }
+    try {
+      setResult({type: '', message: ''});
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
+        PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
+      ]);
+
+      const phoneStateGranted =
+        granted[PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE] === PermissionsAndroid.RESULTS.GRANTED;
+      const contactsGranted =
+        granted[PermissionsAndroid.PERMISSIONS.READ_CONTACTS] === PermissionsAndroid.RESULTS.GRANTED;
+
+      if (phoneStateGranted && contactsGranted) {
+        setResult({type: 'success', message: 'Phone State and Contacts permissions granted.'});
+      } else {
+        setResult({
+          type: 'error',
+          message: `Permissions status: Phone State (${phoneStateGranted ? 'Granted' : 'Denied'}), Contacts (${
+            contactsGranted ? 'Granted' : 'Denied'
+          }).`,
+        });
+      }
+    } catch (err) {
+      setResult({type: 'error', message: 'Failed to request permissions.'});
+    }
+  };
+
   const handleRegister = async () => {
     if (!name.trim()) {
       setResult({type: 'error', message: 'Please enter a valid name.'});
@@ -33,7 +91,7 @@ function RegisterScreen({navigation}) {
     }
 
     if (!image?.uri) {
-      setResult({type: 'error', message: 'Capture a clear face photo before submitting.'});
+      setResult({type: 'error', message: 'Capture or choose a face photo before submitting.'});
       return;
     }
 
@@ -44,6 +102,8 @@ function RegisterScreen({navigation}) {
         name: name.trim(),
         student_code: studentCode.trim() || undefined,
         email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+        guardian_phone: guardianPhone.trim() || undefined,
         department: department.trim() || undefined,
         program: program.trim() || undefined,
         semester: semester.trim() || undefined,
@@ -89,6 +149,20 @@ function RegisterScreen({navigation}) {
         placeholder="student@college.edu"
         keyboardType="email-address"
       />
+      <TextInputField
+        label="Phone Number"
+        value={phone}
+        onChangeText={setPhone}
+        placeholder="Enter student phone number"
+        keyboardType="phone-pad"
+      />
+      <TextInputField
+        label="Guardian Phone"
+        value={guardianPhone}
+        onChangeText={setGuardianPhone}
+        placeholder="Enter guardian phone number"
+        keyboardType="phone-pad"
+      />
       <View style={styles.inlineFields}>
         <View style={styles.inlineItem}>
           <TextInputField label="Department" value={department} onChangeText={setDepartment} placeholder="Department" />
@@ -120,8 +194,21 @@ function RegisterScreen({navigation}) {
 
       <ResultBanner type={result.type} message={result.message} />
 
-      <PrimaryButton label={image?.uri ? 'Retake Face Photo' : 'Capture Face Photo'} onPress={handleCapture} />
+      <View style={styles.buttonRow}>
+        <View style={styles.buttonCol}>
+          <PrimaryButton label={image?.uri ? 'Retake Photo' : 'Capture Photo'} onPress={handleCapture} />
+        </View>
+        <View style={styles.buttonCol}>
+          <PrimaryButton label="Choose Gallery" onPress={handleChooseGallery} variant="secondary" />
+        </View>
+      </View>
+
       <PrimaryButton label="Register Face" onPress={handleRegister} disabled={loading} />
+      <PrimaryButton
+        label="Request Contacts & Phone Access"
+        onPress={requestPhoneAndContactsAccess}
+        variant="secondary"
+      />
       <PrimaryButton label="Go to Attendance" onPress={() => navigation.navigate('Camera')} variant="secondary" />
       <PrimaryButton label="View Logs" onPress={() => navigation.navigate('Logs')} variant="secondary" />
 
@@ -194,6 +281,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   inlineItem: {
+    flex: 1,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  buttonCol: {
     flex: 1,
   },
 });
