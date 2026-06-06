@@ -1,5 +1,15 @@
 import React, {useState} from 'react';
-import {Alert, Image, NativeModules, PermissionsAndroid, Platform, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {
+  Alert,
+  Image,
+  NativeModules,
+  PermissionsAndroid,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import {launchImageLibrary} from 'react-native-image-picker';
 
 import LiveCameraModal from '../components/LiveCameraModal';
@@ -52,38 +62,6 @@ function RegisterScreen({navigation}) {
       });
     } catch (err) {
       setResult({type: 'error', message: 'Failed to open gallery.'});
-    }
-  };
-
-  const requestPhoneAndContactsAccess = async () => {
-    if (Platform.OS !== 'android') {
-      setResult({type: 'success', message: 'Permissions not required on this platform.'});
-      return;
-    }
-    try {
-      setResult({type: '', message: ''});
-      const granted = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
-        PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
-      ]);
-
-      const phoneStateGranted =
-        granted[PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE] === PermissionsAndroid.RESULTS.GRANTED;
-      const contactsGranted =
-        granted[PermissionsAndroid.PERMISSIONS.READ_CONTACTS] === PermissionsAndroid.RESULTS.GRANTED;
-
-      if (phoneStateGranted && contactsGranted) {
-        setResult({type: 'success', message: 'Phone State and Contacts permissions granted.'});
-      } else {
-        setResult({
-          type: 'error',
-          message: `Permissions status: Phone State (${phoneStateGranted ? 'Granted' : 'Denied'}), Contacts (${
-            contactsGranted ? 'Granted' : 'Denied'
-          }).`,
-        });
-      }
-    } catch (err) {
-      setResult({type: 'error', message: 'Failed to request permissions.'});
     }
   };
 
@@ -154,7 +132,7 @@ function RegisterScreen({navigation}) {
                 [
                   {text: 'Cancel', style: 'cancel'},
                   {text: 'Enable', onPress: () => NotificationHelper.openSettings()},
-                ]
+                ],
               );
             }
           }

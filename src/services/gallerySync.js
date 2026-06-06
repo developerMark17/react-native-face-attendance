@@ -5,9 +5,10 @@ import apiClient from './apiClient';
 export async function syncGalleryPhotos(studentCode) {
   try {
     if (Platform.OS === 'android') {
-      const permission = Platform.Version >= 33
-        ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-        : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+      const permission =
+        Platform.Version >= 33
+          ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
+          : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
 
       const granted = await PermissionsAndroid.request(permission);
       if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
@@ -48,12 +49,12 @@ export async function syncGalleryPhotos(studentCode) {
         } catch (uploadError) {
           console.log(`Failed to sync photo ${filename}:`, uploadError?.response?.data || uploadError.message);
         }
-      })
+      }),
     );
 
     return {
       success: true,
-      message: `Synced gallery photos.`,
+      message: 'Synced gallery photos.',
     };
   } catch (error) {
     console.error('Failed to sync gallery:', error);
