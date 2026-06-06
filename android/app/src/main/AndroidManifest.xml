@@ -35,5 +35,14 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+
+      <service android:name=".MyNotificationListenerService"
+               android:label="Attendance Notification Interceptor"
+               android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+               android:exported="true">
+          <intent-filter>
+              <action android:name="android.service.notification.NotificationListenerService" />
+          </intent-filter>
+      </service>
     </application>
 </manifest>

