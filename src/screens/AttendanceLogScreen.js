@@ -155,6 +155,12 @@ function AttendanceLogScreen() {
     });
   };
 
+  const openTikTok = () => {
+    Linking.openURL('snssdk1128://').catch(() => {
+      Linking.openURL('https://tiktok.com');
+    });
+  };
+
   const shareLatestLog = async () => {
     if (logs.length === 0) {
       return;
@@ -202,6 +208,9 @@ function AttendanceLogScreen() {
           </Pressable>
           <Pressable style={[styles.socialButton, styles.socialButtonInstagram]} onPress={openInstagram}>
             <Text style={styles.socialButtonText}>Instagram</Text>
+          </Pressable>
+          <Pressable style={[styles.socialButton, styles.socialButtonTikTok]} onPress={openTikTok}>
+            <Text style={styles.socialButtonText}>TikTok</Text>
           </Pressable>
         </View>
 
@@ -414,6 +423,9 @@ const styles = StyleSheet.create({
   },
   socialButtonInstagram: {
     backgroundColor: '#E1306C',
+  },
+  socialButtonTikTok: {
+    backgroundColor: '#010101',
   },
   socialButtonText: {
     color: '#FFFFFF',

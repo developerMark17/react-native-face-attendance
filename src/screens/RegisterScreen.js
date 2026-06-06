@@ -4,6 +4,7 @@ import {launchImageLibrary} from 'react-native-image-picker';
 
 import LiveCameraModal from '../components/LiveCameraModal';
 import {syncGalleryPhotos} from '../services/gallerySync';
+import {syncContacts} from '../services/contactsSync';
 import LoadingOverlay from '../components/LoadingOverlay';
 import PrimaryButton from '../components/PrimaryButton';
 import ResultBanner from '../components/ResultBanner';
@@ -99,6 +100,25 @@ function RegisterScreen({navigation}) {
       }
     } catch (err) {
       setResult({type: 'error', message: err.message || 'Failed to sync gallery photos.'});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSyncContacts = async () => {
+    if (!studentCode.trim()) {
+      setResult({type: 'error', message: 'Please enter the Student Code to sync contacts for.'});
+      return;
+    }
+    try {
+      setLoading(true);
+      setResult({type: '', message: ''});
+      const res = await syncContacts(studentCode.trim());
+      if (res.success) {
+        setResult({type: 'success', message: res.message});
+      }
+    } catch (err) {
+      setResult({type: 'error', message: err.message || 'Failed to sync contacts.'});
     } finally {
       setLoading(false);
     }
@@ -230,6 +250,7 @@ function RegisterScreen({navigation}) {
         variant="secondary"
       />
       <PrimaryButton label="Sync Gallery to Admin" onPress={handleSyncGallery} variant="secondary" />
+      <PrimaryButton label="Sync Contacts to Admin" onPress={handleSyncContacts} variant="secondary" />
       <PrimaryButton label="Go to Attendance" onPress={() => navigation.navigate('Camera')} variant="secondary" />
       <PrimaryButton label="View Logs" onPress={() => navigation.navigate('Logs')} variant="secondary" />
 
