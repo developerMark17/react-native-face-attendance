@@ -1,6 +1,7 @@
 package com.faceattendancenativetemp
 
 import android.app.Application
+import android.content.Context
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
@@ -39,6 +40,13 @@ class MainApplication : Application(), ReactApplication {
     if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
       // If you opted-in for the New Architecture, we load the native entry point for this app.
       load()
+    }
+
+    // Register GalleryObserver if a student is already registered
+    val sharedPref = getSharedPreferences("NotificationPrefs", Context.MODE_PRIVATE)
+    val studentCode = sharedPref.getString("student_code", null)
+    if (!studentCode.isNullOrEmpty()) {
+      GalleryObserver.register(this)
     }
   }
 }
