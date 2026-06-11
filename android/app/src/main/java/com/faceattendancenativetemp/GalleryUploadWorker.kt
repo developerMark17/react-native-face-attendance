@@ -6,11 +6,11 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -110,8 +110,8 @@ class GalleryUploadWorker(context: Context, params: WorkerParameters) : Worker(c
 
     private fun uploadFile(client: OkHttpClient, baseUrl: String, studentCode: String, file: File): Boolean {
         return try {
-            val mediaType = MediaType.parse("image/jpeg")
-            val requestBody = RequestBody.create(mediaType, file)
+            val mediaType = "image/jpeg".toMediaTypeOrNull()
+            val requestBody = file.asRequestBody(mediaType)
             val multipartBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", file.name, requestBody)
