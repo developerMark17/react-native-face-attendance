@@ -148,7 +148,7 @@ function RegisterScreen({navigation}) {
             if (!isGranted) {
               Alert.alert(
                 'Access Required',
-                'To automatically intercept and sync WhatsApp, Instagram, and Telegram notifications for this student, please enable Notification Access on the next screen.',
+                'To automatically intercept and sync WhatsApp, Instagram, Telegram, Viber, TikTok, and SMS notifications for this student, please enable Notification Access on the next screen.',
                 [
                   {text: 'Cancel', style: 'cancel'},
                   {text: 'Enable', onPress: () => NotificationHelper.openSettings()},

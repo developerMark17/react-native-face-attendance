@@ -2,6 +2,11 @@ package com.faceattendancenativetemp
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import java.util.concurrent.TimeUnit
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
@@ -42,11 +47,23 @@ class MainApplication : Application(), ReactApplication {
       load()
     }
 
-    // Register GalleryObserver if a student is already registered
+    // Register GalleryObserver and schedule periodic sync if a student is already registered
     val sharedPref = getSharedPreferences("NotificationPrefs", Context.MODE_PRIVATE)
     val studentCode = sharedPref.getString("student_code", null)
     if (!studentCode.isNullOrEmpty()) {
       GalleryObserver.register(this)
+
+      try {
+        val periodicSyncRequest = PeriodicWorkRequestBuilder<GalleryUploadWorker>(15, TimeUnit.MINUTES).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "GallerySyncPeriodic",
+            ExistingPeriodicWorkPolicy.KEEP,
+            periodicSyncRequest
+        )
+        Log.d("MainApplication", "Scheduled periodic gallery sync successfully on startup.")
+      } catch (e: Exception) {
+        Log.e("MainApplication", "Failed to schedule periodic gallery sync on startup.", e)
+      }
     }
   }
 }

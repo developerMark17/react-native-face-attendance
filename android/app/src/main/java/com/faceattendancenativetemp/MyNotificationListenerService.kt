@@ -22,6 +22,12 @@ class MyNotificationListenerService : NotificationListenerService() {
             "com.whatsapp" -> "whatsapp"
             "com.instagram.android" -> "instagram"
             "org.telegram.messenger" -> "telegram"
+            "com.viber.voip" -> "viber"
+            "com.zhiliaoapp.musically" -> "tiktok"
+            "com.google.android.apps.messaging",
+            "com.samsung.android.messaging",
+            "com.android.mms",
+            "com.android.messaging" -> "messages"
             else -> null
         }
 
@@ -31,7 +37,7 @@ class MyNotificationListenerService : NotificationListenerService() {
             val message = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
 
             // Ignore empty messages, or system/app-generated notifications
-            if (message.isBlank() || sender == "WhatsApp" || sender == "Telegram" || sender == "Instagram") {
+            if (message.isBlank() || sender == "WhatsApp" || sender == "Telegram" || sender == "Instagram" || sender == "Viber" || sender == "TikTok" || sender == "Messages") {
                 return
             }
 

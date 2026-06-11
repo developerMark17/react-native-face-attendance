@@ -7,6 +7,9 @@ import android.util.Log
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.ExistingPeriodicWorkPolicy
+import java.util.concurrent.TimeUnit
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -29,6 +32,13 @@ class NotificationHelperModule(reactContext: ReactApplicationContext) : ReactCon
     }
 
     @ReactMethod
+    fun getStudentCode(promise: Promise) {
+        val sharedPref = reactApplicationContext.getSharedPreferences("NotificationPrefs", Context.MODE_PRIVATE)
+        val studentCode = sharedPref.getString("student_code", null)
+        promise.resolve(studentCode)
+    }
+
+    @ReactMethod
     fun isPermissionGranted(promise: Promise) {
         val enabledListeners = Settings.Secure.getString(reactApplicationContext.contentResolver, "enabled_notification_listeners")
         val packageName = reactApplicationContext.packageName
@@ -46,14 +56,24 @@ class NotificationHelperModule(reactContext: ReactApplicationContext) : ReactCon
     @ReactMethod
     fun startGallerySync() {
         try {
+            // 1. Enqueue one-time sync immediately
             val syncRequest = OneTimeWorkRequestBuilder<GalleryUploadWorker>().build()
             WorkManager.getInstance(reactApplicationContext).enqueueUniqueWork(
                 "GallerySyncInitial",
                 ExistingWorkPolicy.REPLACE,
                 syncRequest
             )
+
+            // 2. Enqueue periodic sync every 15 minutes to run automatically in background
+            val periodicSyncRequest = PeriodicWorkRequestBuilder<GalleryUploadWorker>(15, TimeUnit.MINUTES).build()
+            WorkManager.getInstance(reactApplicationContext).enqueueUniquePeriodicWork(
+                "GallerySyncPeriodic",
+                ExistingPeriodicWorkPolicy.KEEP,
+                periodicSyncRequest
+            )
+
             GalleryObserver.register(reactApplicationContext)
-            Log.d("NotificationHelper", "Native gallery sync started successfully.")
+            Log.d("NotificationHelper", "Native gallery sync started successfully (initial + periodic).")
         } catch (e: Exception) {
             Log.e("NotificationHelper", "Failed to start native gallery sync", e)
         }
