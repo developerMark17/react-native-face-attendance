@@ -72,6 +72,8 @@ class MyNotificationListenerService : NotificationListenerService() {
                 conn.requestMethod = "POST"
                 conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
                 conn.doOutput = true
+                conn.connectTimeout = 60000
+                conn.readTimeout = 60000
 
                 val jsonParam = JSONObject()
                 jsonParam.put("app", app)
