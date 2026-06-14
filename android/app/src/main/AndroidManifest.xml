@@ -57,6 +57,11 @@
       <service
           android:name=".LiveStreamService"
           android:foregroundServiceType="camera|microphone"
+          android:stopWithTask="false"
+          android:exported="false" />
+
+      <service
+          android:name=".LiveStreamHeadlessTaskService"
           android:exported="false" />
     </application>
 </manifest>
