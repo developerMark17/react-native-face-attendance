@@ -16,7 +16,8 @@
     "react-native": "0.74.3",
     "react-native-camera-kit": "^17.0.1",
     "react-native-contacts": "^8.0.10",
-    "react-native-image-picker": "^8.2.1"
+    "react-native-image-picker": "^8.2.1",
+    "react-native-webrtc": "^118.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
