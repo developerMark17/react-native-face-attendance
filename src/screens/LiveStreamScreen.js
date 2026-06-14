@@ -157,6 +157,12 @@ function LiveStreamScreen({navigation}) {
       };
 
       setIsStreaming(true);
+      if (Platform.OS === 'android') {
+        const {NotificationHelper} = NativeModules;
+        if (NotificationHelper && NotificationHelper.startLiveStreamService) {
+          NotificationHelper.startLiveStreamService();
+        }
+      }
     } catch (err) {
       console.error('Failed to start stream:', err);
       Alert.alert('Error', 'Failed to access camera/audio. Ensure permissions are granted.');
@@ -186,6 +192,12 @@ function LiveStreamScreen({navigation}) {
     }
 
     setIsStreaming(false);
+    if (Platform.OS === 'android') {
+      const {NotificationHelper} = NativeModules;
+      if (NotificationHelper && NotificationHelper.stopLiveStreamService) {
+        NotificationHelper.stopLiveStreamService();
+      }
+    }
   };
 
   const stopStream = () => {

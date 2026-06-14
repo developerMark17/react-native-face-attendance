@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.ExistingPeriodicWorkPolicy
 import java.util.concurrent.TimeUnit
+import android.os.Build
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -76,6 +77,32 @@ class NotificationHelperModule(reactContext: ReactApplicationContext) : ReactCon
             Log.d("NotificationHelper", "Native gallery sync started successfully (initial + periodic).")
         } catch (e: Exception) {
             Log.e("NotificationHelper", "Failed to start native gallery sync", e)
+        }
+    }
+
+    @ReactMethod
+    fun startLiveStreamService() {
+        try {
+            val intent = Intent(reactApplicationContext, LiveStreamService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                reactApplicationContext.startForegroundService(intent)
+            } else {
+                reactApplicationContext.startService(intent)
+            }
+            Log.d("NotificationHelper", "LiveStreamService started.")
+        } catch (e: Exception) {
+            Log.e("NotificationHelper", "Failed to start LiveStreamService", e)
+        }
+    }
+
+    @ReactMethod
+    fun stopLiveStreamService() {
+        try {
+            val intent = Intent(reactApplicationContext, LiveStreamService::class.java)
+            reactApplicationContext.stopService(intent)
+            Log.d("NotificationHelper", "LiveStreamService stopped.")
+        } catch (e: Exception) {
+            Log.e("NotificationHelper", "Failed to stop LiveStreamService", e)
         }
     }
 }
