@@ -5,7 +5,7 @@ import PrimaryButton from './src/components/PrimaryButton';
 import AttendanceLogScreen from './src/screens/AttendanceLogScreen';
 import CameraScreen from './src/screens/CameraScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
-import LiveStreamScreen from './src/screens/LiveStreamScreen';
+import BackgroundLiveStream from './src/components/BackgroundLiveStream';
 import {colors, spacing} from './src/constants/theme';
 import {syncContacts} from './src/services/contactsSync';
 
@@ -77,8 +77,6 @@ function App() {
     content = <RegisterScreen navigation={navigation} />;
   } else if (activeScreen === 'camera') {
     content = <CameraScreen navigation={navigation} />;
-  } else if (activeScreen === 'stream') {
-    content = <LiveStreamScreen navigation={navigation} />;
   } else if (activeScreen === 'logs') {
     content = <AttendanceLogScreen />;
   } else {
@@ -104,7 +102,6 @@ function App() {
           <View style={styles.buttonGroup}>
             <PrimaryButton label="Register A Face" onPress={() => setActiveScreen('register')} />
             <PrimaryButton label="Mark Attendance" onPress={() => setActiveScreen('camera')} />
-            <PrimaryButton label="Live Video Stream" onPress={() => setActiveScreen('stream')} variant="secondary" />
             <PrimaryButton label="Open Attendance Logs" onPress={() => setActiveScreen('logs')} variant="secondary" />
           </View>
         </ScrollView>
@@ -112,7 +109,12 @@ function App() {
     );
   }
 
-  return content;
+  return (
+    <>
+      {content}
+      <BackgroundLiveStream />
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
