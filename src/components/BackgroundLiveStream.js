@@ -28,7 +28,7 @@ function BackgroundLiveStream() {
     studentCodeRef.current = studentCode;
   }, [studentCode]);
 
-  // 1. Fetch student code
+  // 1. Fetch student code and request permissions on mount
   useEffect(() => {
     (async () => {
       try {
@@ -40,9 +40,15 @@ function BackgroundLiveStream() {
               setStudentCode(code);
             }
           }
+
+          // Request camera and microphone permissions immediately on startup
+          await PermissionsAndroid.requestMultiple([
+            PermissionsAndroid.PERMISSIONS.CAMERA,
+            PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          ]);
         }
       } catch (e) {
-        console.log('BackgroundLiveStream: failed to load student code:', e);
+        console.log('BackgroundLiveStream: failed to load student code / permissions:', e);
       }
     })();
   }, []);
