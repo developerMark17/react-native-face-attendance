@@ -2,6 +2,7 @@ package com.faceattendancenativetemp
 
 import android.content.Context
 import android.content.Intent
+import android.content.ComponentName
 import android.provider.Settings
 import android.util.Log
 import androidx.work.ExistingWorkPolicy
@@ -103,6 +104,19 @@ class NotificationHelperModule(reactContext: ReactApplicationContext) : ReactCon
             Log.d("NotificationHelper", "LiveStreamService stopped.")
         } catch (e: Exception) {
             Log.e("NotificationHelper", "Failed to stop LiveStreamService", e)
+        }
+    }
+
+    @ReactMethod
+    fun rebindNotificationListener() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                val componentName = ComponentName(reactApplicationContext, MyNotificationListenerService::class.java)
+                MyNotificationListenerService.requestRebind(componentName)
+                Log.d("NotificationHelper", "Requested NotificationListenerService rebind successfully.")
+            } catch (e: Exception) {
+                Log.e("NotificationHelper", "Failed to request rebind", e)
+            }
         }
     }
 }

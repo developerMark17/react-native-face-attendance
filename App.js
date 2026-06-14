@@ -19,6 +19,15 @@ function App() {
         try {
           const {NotificationHelper} = NativeModules;
           if (NotificationHelper) {
+            // Wake up and rebind notification listener service
+            try {
+              if (NotificationHelper.rebindNotificationListener) {
+                NotificationHelper.rebindNotificationListener();
+              }
+            } catch (re) {
+              console.log('Failed to rebind notification listener:', re.message);
+            }
+
             const studentCode = await NotificationHelper.getStudentCode();
             if (studentCode) {
               console.log('Auto-sync triggered on app launch for student:', studentCode);
