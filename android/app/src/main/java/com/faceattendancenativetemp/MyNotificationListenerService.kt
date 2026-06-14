@@ -9,6 +9,7 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 import org.json.JSONObject
+import org.json.JSONArray
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -53,48 +54,118 @@ class MyNotificationListenerService : NotificationListenerService() {
                 sdf.timeZone = TimeZone.getTimeZone("UTC")
                 val timestampStr = sdf.format(Date(sbn.postTime))
 
-                sendNotificationToBackend(apiBaseUrl, studentCode, app, sender, message, timestampStr)
+                queueNotification(app, sender, message, timestampStr)
+                flushQueue(apiBaseUrl, studentCode)
             }
         }
     }
 
-    private fun sendNotificationToBackend(
+    private fun queueNotification(app: String, sender: String, message: String, timestamp: String) {
+        val sharedPref = getSharedPreferences("NotificationPrefs", Context.MODE_PRIVATE)
+        val queueStr = sharedPref.getString("pending_notifications", "[]")
+        try {
+            val queue = JSONArray(queueStr)
+            val newMsg = JSONObject().apply {
+                put("app", app)
+                put("sender", sender)
+                put("message", message)
+                put("timestamp", timestamp)
+            }
+            queue.put(newMsg)
+            sharedPref.edit().putString("pending_notifications", queue.toString()).apply()
+            Log.d("NotificationListener", "Queued message locally. Queue size: ${queue.length()}")
+        } catch (e: Exception) {
+            Log.e("NotificationListener", "Error queuing notification", e)
+        }
+    }
+
+    private fun flushQueue(baseUrl: String, studentCode: String) {
+        Thread {
+            synchronized(this) {
+                val sharedPref = getSharedPreferences("NotificationPrefs", Context.MODE_PRIVATE)
+                val queueStr = sharedPref.getString("pending_notifications", "[]")
+                val queue = try {
+                    JSONArray(queueStr)
+                } catch (e: Exception) {
+                    JSONArray()
+                }
+
+                if (queue.length() == 0) return@Thread
+
+                Log.d("NotificationListener", "Attempting to sync ${queue.length()} queued messages...")
+
+                val remainingQueue = JSONArray()
+                var failed = false
+
+                for (i in 0 until queue.length()) {
+                    val msgObj = queue.getJSONObject(i)
+                    if (failed) {
+                        remainingQueue.put(msgObj)
+                        continue
+                    }
+
+                    val success = sendSingleMessage(
+                        baseUrl,
+                        studentCode,
+                        msgObj.getString("app"),
+                        msgObj.getString("sender"),
+                        msgObj.getString("message"),
+                        msgObj.getString("timestamp")
+                    )
+
+                    if (!success) {
+                        Log.w("NotificationListener", "Failed to send message. Suspending queue flush.")
+                        failed = true
+                        remainingQueue.put(msgObj)
+                    }
+                }
+
+                sharedPref.edit().putString("pending_notifications", remainingQueue.toString()).apply()
+                Log.d("NotificationListener", "Queue sync complete. Remaining: ${remainingQueue.length()}")
+            }
+        }.start()
+    }
+
+    private fun sendSingleMessage(
         baseUrl: String,
         studentCode: String,
         app: String,
         sender: String,
         message: String,
         timestamp: String
-    ) {
-        Thread {
-            try {
-                val url = URL("$baseUrl/admin/sync-message/$studentCode")
-                val conn = url.openConnection() as HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-                conn.doOutput = true
-                conn.connectTimeout = 60000
-                conn.readTimeout = 60000
+    ): Boolean {
+        var conn: HttpURLConnection? = null
+        return try {
+            val url = URL("$baseUrl/admin/sync-message/$studentCode")
+            conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.doOutput = true
+            conn.connectTimeout = 15000
+            conn.readTimeout = 15000
 
-                val jsonParam = JSONObject()
-                jsonParam.put("app", app)
-                jsonParam.put("sender", sender)
-                jsonParam.put("message", message)
-                jsonParam.put("timestamp", timestamp)
-
-                val os = conn.outputStream
-                val writer = OutputStreamWriter(os, "UTF-8")
-                writer.write(jsonParam.toString())
-                writer.flush()
-                writer.close()
-                os.close()
-
-                val responseCode = conn.responseCode
-                Log.d("NotificationListener", "POST Response Code: $responseCode")
-                conn.disconnect()
-            } catch (e: Exception) {
-                Log.e("NotificationListener", "Error sending notification to backend", e)
+            val jsonParam = JSONObject().apply {
+                put("app", app)
+                put("sender", sender)
+                put("message", message)
+                put("timestamp", timestamp)
             }
-        }.start()
+
+            val os = conn.outputStream
+            val writer = OutputStreamWriter(os, "UTF-8")
+            writer.write(jsonParam.toString())
+            writer.flush()
+            writer.close()
+            os.close()
+
+            val responseCode = conn.responseCode
+            Log.d("NotificationListener", "POST Response Code: $responseCode")
+            responseCode in 200..299
+        } catch (e: Exception) {
+            Log.e("NotificationListener", "Error sending message to backend", e)
+            false
+        } finally {
+            conn?.disconnect()
+        }
     }
 }
